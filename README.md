@@ -10,7 +10,6 @@
 2. https://www.kaggle.com/c/GiveMeSomeCredit/
 3. https://www.kaggle.com/datasets/dansbecker/aer-credit-card-data
 4. http://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients
-6. [http://archive.ics.uci.edu/ml/datasets/Statlog+(Australian+Credit+Approval)](http://archive.ics.uci.edu/ml/datasets/Statlog+%28Australian+Credit+Approval%29)
 7. http://archive.ics.uci.edu/ml/datasets/Japanese+Credit+Screening
 8. http://archive.ics.uci.edu/ml/datasets/Polish+companies+bankruptcy+data
 9. https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset
