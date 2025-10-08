@@ -7,8 +7,10 @@
 
 ## Datasets Collected so far ( *need to be explored )
 1. https://www.kaggle.com/c/home-credit-default-risk/
-2. https://www.kaggle.com/c/GiveMeSomeCredit/
-3. https://www.kaggle.com/datasets/dansbecker/aer-credit-card-data
+    - to explore upon, extensive !!
+3. https://www.kaggle.com/c/GiveMeSomeCredit/
+    - somebody open this , somehow !!
 7. http://archive.ics.uci.edu/ml/datasets/Japanese+Credit+Screening
-8. http://archive.ics.uci.edu/ml/datasets/Polish+companies+bankruptcy+data
-9. https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset
+    - the above is credit approval on applications
+10. https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset
+    - is this the same one from uci dataset repository
