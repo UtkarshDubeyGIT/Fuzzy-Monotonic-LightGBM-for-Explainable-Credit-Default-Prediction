@@ -13,4 +13,4 @@
 7. http://archive.ics.uci.edu/ml/datasets/Japanese+Credit+Screening
     - the above is credit approval on applications
 10. https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset
-    - is this the same one from uci dataset repository
+    - is this the same one from uci dataset repository (https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients)
