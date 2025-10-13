@@ -1,11 +1,11 @@
-# 🧠 X-FuzzyScore: Explainable Fuzzy Credit-Risk Prediction Framework
+#  X-FuzzyScore: Explainable Fuzzy Credit-Risk Prediction Framework
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 An explainable, human-interpretable AI system for credit-risk prediction that combines **Fuzzy Logic**, **Machine Learning**, and **Explainability** (SHAP) with an interactive visualization frontend.
 
-## 🎯 Project Objectives
+##  Project Objectives
 
 1. **Predict** credit-risk/loan-default probability for individuals or companies
 2. **Interpret** every prediction in human language and visuals
@@ -13,7 +13,7 @@ An explainable, human-interpretable AI system for credit-risk prediction that co
 4. **Visualize** model results, fuzzy rules, and SHAP explanations via web dashboard
 5. **Publish** results as an academic research paper
 
-## 🧩 System Architecture
+##  System Architecture
 
 ```
 Dataset(s)
@@ -41,7 +41,7 @@ Dataset(s)
    └── Outputs → Probability, Risk Label, Explanations, Visuals
 ```
 
-## 📊 Datasets
+##  Datasets
 
 | Dataset                    | Source            | Size           | Use                         |
 | -------------------------- | ----------------- | -------------- | --------------------------- |
@@ -49,7 +49,7 @@ Dataset(s)
 | Taiwan Credit Card Default | UCI ML Repository | 30,000 samples | Large-scale testing         |
 | LendingClub Loan Data      | Kaggle            | 100k+          | Real-world validation       |
 
-## 🧮 Expected Outputs
+##  Expected Outputs
 
 | Type                 | Example                                                          |
 | -------------------- | ---------------------------------------------------------------- |
@@ -70,7 +70,7 @@ Dataset(s)
 | **Visualization**  | streamlit, dash, plotly, matplotlib |
 | **Documentation**  | Overleaf/LaTeX, GitHub              |
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -97,7 +97,7 @@ python src/ml/train.py
 streamlit run src/visualization/dashboard.py
 ```
 
-## 🧪 Evaluation Metrics
+##  Evaluation Metrics
 
 | Category             | Metrics                                           |
 | -------------------- | ------------------------------------------------- |
@@ -106,7 +106,7 @@ streamlit run src/visualization/dashboard.py
 | **Usability**        | Expert feedback / human interpretability rating   |
 | **Visualization**    | Clarity, interaction smoothness                   |
 
-## 📅 Project Timeline
+##  Project Timeline
 
 | Week | Milestone                                |
 | ---- | ---------------------------------------- |
@@ -117,11 +117,11 @@ streamlit run src/visualization/dashboard.py
 | 7    | Develop visualization dashboard          |
 | 8    | Compile results, write & format paper    |
 
-## 👥 Contributing
+##  Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📝 Citation
+##  Citation
 
 If you use this framework in your research, please cite:
 
@@ -140,11 +140,11 @@ If you use this framework in your research, please cite:
 - UCI Default of Credit Card Clients Dataset (Yeh & Lien 2009)
 - Kaggle LendingClub Loan Data (wordsforthewise)
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+##  Links
 
 - **Documentation**: [docs/](docs/)
 - **Research Paper**: [docs/paper/](docs/paper/)
