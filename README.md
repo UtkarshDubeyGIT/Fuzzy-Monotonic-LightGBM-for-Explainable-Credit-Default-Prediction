@@ -10,7 +10,7 @@
     - to explore upon, extensive !!
 3. https://www.kaggle.com/c/GiveMeSomeCredit/
     - somebody open this , somehow !!
+  
+
 7. http://archive.ics.uci.edu/ml/datasets/Japanese+Credit+Screening
-    - the above is credit approval on applications
-10. https://www.kaggle.com/datasets/uciml/default-of-credit-card-clients-dataset
-    - is this the same one from uci dataset repository (https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients)
+    - the above is credit approval on applications, (future aspect => if track record of payments isn't available -> then we can utilise this to predict the credit request possibility)
