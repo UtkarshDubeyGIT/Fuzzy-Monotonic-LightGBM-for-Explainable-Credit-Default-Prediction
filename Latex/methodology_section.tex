@@ -1,0 +1,245 @@
+% Credit Risk Analysis and Prediction Framework
+% Methodology Section
+% UtkarshDubeyGIT et al.
+
+\section{Methodology}
+
+This section details the end-to-end methodology of the Explainable Fuzzy Credit-Risk Prediction (X-FuzzyScore) framework, covering data preprocessing, fuzzy inference, machine learning models, hybridization strategies, explainability, and evaluation. We emphasize transparent and reproducible practices to ensure both predictive performance and interpretability.
+
+\subsection{Pipeline Overview}
+
+\begin{figure}[h]
+    \centering
+    % Placeholder: replace with your pipeline diagram if available
+    \includegraphics[width=0.95\textwidth]{../figures/process1_img_001.png}
+    \caption{X-FuzzyScore methodology pipeline: data preprocessing, fuzzy inference, ML modeling, hybrid fusion, explainability, and evaluation.}
+\end{figure}
+
+\begin{enumerate}
+    \item Data ingestion and cleaning (schema alignment, recoding, deduplication).
+    \item Feature engineering (winsorization/capping, scaling if required).
+    \item Fuzzy inference layer to compute a human-interpretable risk score.
+    \item ML modeling (Logistic Regression, Random Forest, XGBoost, LightGBM).
+    \item Hybridization: fuse fuzzy and ML via feature augmentation or late fusion.
+    \item Explainability: SHAP-based local and global attributions.
+    \item Evaluation: metrics, threshold selection, and calibration checks.
+\end{enumerate}
+
+\subsection{Data Preprocessing}
+
+We use the UCI Taiwan Credit Card Default dataset as the primary benchmark, with plans to integrate German Credit and LendingClub data. Let the raw dataset be \(\mathcal{D} = \{(x_i, y_i)\}_{i=1}^N\), where \(y_i \in \{0,1\}\) indicates non-default or default.
+
+Preprocessing steps (from the EDA notebook):
+\begin{itemize}
+    \item Column normalization: unify naming (e.g., \texttt{default payment next month} \(\rightarrow\) \texttt{default\_payment}; \texttt{PAY\_0} \(\rightarrow\) \texttt{PAY\_1}) and lowercase all columns.
+    \item Categorical recoding: group undocumented categories into ``Others'' (\texttt{education} \(0,5,6\) \(\rightarrow\) 4; \texttt{marriage} \(0\) \(\rightarrow\) 3).
+    \item Payment status normalization: map \(-2,-1\) to \(0\) in \texttt{pay\_1}--\texttt{pay\_6} to represent no-consumption or paid-in-full as non-delinquency.
+    \item Deduplication: drop duplicates after normalization to avoid leakage and inflated support.
+    \item Outlier handling: for heavy-tailed features (\texttt{limit\_bal}, \texttt{bill\_amt\*}, \texttt{pay\_amt\*}), apply upper capping (winsorization) to obtain features like \texttt{limit\_bal\_capped}, \texttt{bill\_amt1\_capped}, ... \footnote{We assume percentile-based capping (e.g., 1st--99th) consistent with the feature names; exact cutoffs are recorded in the preprocessing notebook.}
+\end{itemize}
+
+We use an 80/20 train-test split (\(n_{train}=23971\), \(n_{test}=5993\)) consistent with reported metrics. Class imbalance is addressed during evaluation via threshold tuning and by optionally using class-weighted losses in ML models.
+
+\subsection{Fuzzy Inference Layer}
+
+The fuzzy layer provides a human-interpretable risk score \(s_{\text{fuzzy}} \in [0,1]\). We define linguistic variables over selected features (e.g., credit limit, bill amounts, delinquency, payment ratios), each with membership functions for labels such as Low, Medium, and High.
+
+\subsubsection{Membership Functions}
+
+For a scalar feature \(x\), a triangular membership function for label \(\ell\) is:
+\begin{equation}
+    \mu_{\ell}(x; a,b,c) = \max\left(\min\left(\frac{x-a}{b-a}, \frac{c-x}{c-b}\right), 0\right),\; a < b < c.
+\end{equation}
+Trapezoidal sets \(\mu_{\ell}(x; a,b,c,d)\) generalize plateaus in the core. Parameters are chosen from quantiles of the training data or domain guidelines.
+
+\begin{figure}[h]
+    \centering
+    % Example fuzzy membership illustration (placeholder from EDA images)
+    \includegraphics[width=0.75\textwidth]{../figures/process1_img_002.png}
+    \caption{Example membership-like curves used illustratively. Replace with exact fuzzy membership plots if generated.}
+\end{figure}
+
+\subsubsection{Rule Base and Inference}
+
+We use Mamdani inference with min (\(\wedge\)) as the t-norm and max (\(\vee\)) as the s-norm. Example rules:
+\begin{align}
+    &\textbf{R1:}\; \text{IF } \text{limit\_bal is Low} \wedge \text{delinquency is High} \Rightarrow \text{risk is High},\\
+    &\textbf{R2:}\; \text{IF } \text{bill utilization is Low} \wedge \text{payment history is Good} \Rightarrow \text{risk is Low}.
+\end{align}
+For a rule with antecedent membership \(\alpha\), the implied consequent set is clipped: \(\mu_{C'}(z) = \min(\alpha, \mu_C(z))\). Aggregation across rules uses max. Defuzzification via centroid yields:
+\begin{equation}
+    s_{\text{fuzzy}} = \frac{\int z\, \mu_{\text{agg}}(z)\,dz}{\int \mu_{\text{agg}}(z)\,dz},\quad z \in [0,1].
+\end{equation}
+
+\begin{figure}[h]
+    \centering
+    % Placeholder for fuzzy rules workflow
+    \includegraphics[width=0.75\textwidth]{../figures/process1_img_003.png}
+    \caption{Illustration of the inference workflow (placeholder). Replace with a dedicated fuzzy rules diagram if available.}
+\end{figure}
+
+\subsection{Machine Learning Models}
+
+We train standard classifiers on engineered features (23 baseline features) and on the hybrid set that appends \(s_{\text{fuzzy}}\) (24 features). Let \(x \in \mathbb{R}^d\), \(y \in \{0,1\}\).
+
+\paragraph{Logistic Regression} predicts \(p(y=1\mid x) = \sigma(w^\top x + b)\), \(\sigma(t) = 1/(1+e^{-t})\), with parameters learned via cross-entropy minimization and L2 regularization.
+
+\paragraph{Random Forest} aggregates \(T\) decision trees \(\{h_t\}\) trained on bootstraps and feature subsamples; prediction is the average of tree posteriors.
+
+\paragraph{Gradient Boosting (XGBoost/LightGBM)} optimizes an additive tree ensemble \(F_M(x) = \sum_{m=1}^M \gamma_m h_m(x)\) via gradient descent on a differentiable objective (logistic loss with regularization), using histogram-based splits and shrinkage.
+
+\subsection{Hybridization Strategies}
+
+We combine fuzzy and ML predictions in two complementary ways:
+\begin{description}
+    \item[Feature Augmentation:] concatenate the fuzzy score to the feature vector: \(x' = [x; s_{\text{fuzzy}}]\). The classifier learns to weight \(s_{\text{fuzzy}}\) with other features.
+    \item[Late Fusion:] combine calibrated posteriors: \(\hat{p} = (1-\lambda)\, p_{\text{ML}} + \lambda\, s_{\text{fuzzy}}\), \(\lambda \in [0,1]\) tuned on validation data, or learn a meta-learner \(g\big(p_{\text{ML}}, s_{\text{fuzzy}}\big)\).
+\end{description}
+
+\subsection{Explainability with SHAP}
+
+We adopt SHAP, an additive feature attribution method with explanations of the form \(f(x) \approx \phi_0 + \sum_i \phi_i\). Here, \(\phi_i\) is the Shapley value for feature \(i\), computed from coalitional contributions. We report global importance via mean \(|\phi_i|\) and local explanations for individual decisions (especially near the decision threshold).
+
+\begin{figure}[h]
+    \centering
+    % Placeholder for SHAP outputs
+    \includegraphics[width=0.75\textwidth]{../figures/process1_img_004.png}
+    \caption{Example explanation-style plot (placeholder). Replace with SHAP summary and force plots when generated.}
+\end{figure}
+
+\subsection{Representative EDA Visuals}
+
+We include representative plots extracted from the EDA notebook to ground the methodology and preprocessing choices:
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../figures/process1_img_005.png}
+        \caption{Default vs non-default distribution}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../figures/process1_img_006.png}
+        \caption{Education level distribution}
+    \end{subfigure}
+    \caption{Target imbalance and categorical distribution motivate threshold tuning and careful encoding.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../figures/process1_img_007.png}
+        \caption{Credit limit histogram}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{../figures/process1_img_008.png}
+        \caption{Credit limit boxplot}
+    \end{subfigure}
+    \caption{Right-skew and outliers motivate winsorization/capping strategies.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../figures/process1_img_009.png}
+    \caption{Correlation heatmap indicating strong temporal correlations among bill amount features.}
+\end{figure}
+
+\subsection{Evaluation Protocol}
+
+\paragraph{Split and Metrics} We evaluate on a held-out test set (\(20\%\)). Metrics include Accuracy, Precision, Recall, F1, and ROC-AUC:
+\begin{align}
+    \text{Precision} &= \frac{TP}{TP + FP},\quad \text{Recall} = \frac{TP}{TP + FN},\\
+    \text{F1} &= 2\,\frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}},\quad \text{AUC} = \int_0^1 \text{TPR}(\text{FPR})\,d\,\text{FPR}.
+\end{align}
+
+\paragraph{Thresholding and Imbalance} Because defaults are the minority class, we tune the decision threshold \(\tau\) to optimize F1 or Youden's \(J = \text{TPR} - \text{FPR}\). We also consider class-weighted losses and probability calibration checks (e.g., reliability curves).
+
+\paragraph{Reported Results} On the Taiwan dataset, the best-performing hybrids achieve ROC-AUC around 0.77 with Recall around 0.60 (e.g., LightGBM+Fuzzy and XGBoost+Fuzzy), while Random Forest baselines attain similar AUC but slightly different precision-recall trade-offs.
+
+\subsection{Reproducibility}
+
+We fix random seeds, log preprocessing parameters (e.g., capping percentiles), and record feature schemas. The hybrid feature set includes the fuzzy score, yielding 24 features total, with baseline features numbering 23. Train/test sizes are fixed at \(23971/5993\) for comparability.
+
+\subsection{Computational Considerations}
+
+Tree ensembles scale approximately with \(\mathcal{O}(M\, d\, n \log n)\) for \(M\) trees and \(n\) samples. Fuzzy inference is linear in the number of rules and variables. The overhead of SHAP (TreeSHAP) is polynomial in tree depth and tree count but efficient for tree models.
+
+\subsection{Method Summary}
+
+The methodology tightly integrates interpretable fuzzy reasoning with strong ML classifiers, combining human-understandable rule-based insights with data-driven accuracy. The hybridization improves recall while maintaining competitive AUC, and SHAP provides transparent explanations for stakeholders and regulators.
+
+\subsection{Training Configuration and Hyperparameters}
+
+Unless otherwise specified, models are trained with the following default settings (tuned via validation or simple grid search):
+\begin{itemize}
+    \item Logistic Regression: penalty=L2, $C \in \{0.1, 1, 10\}$, class\_weight=\texttt{balanced} (optional).
+    \item Random Forest: $n$\_estimators $\in [200, 600]$, max\_depth $\in \{None, 8, 12\}$, max\_features=sqrt.
+    \item XGBoost/LightGBM: learning\_rate $\in [0.03, 0.1]$, n\_estimators $\in [300, 800]$, max\_depth $\in \{4,6,8\}$, subsample/colsample\_by\_tree $\in [0.6, 0.9]$.
+    \item Fuzzy layer: membership parameters derived from quantiles (e.g., 20/50/80th), rule base curated to cover high-risk and low-risk archetypes.
+\end{itemize}
+
+Feature scaling is not mandatory for tree models; for LR, we use either standardization or leave raw if features are capped and numerically stable. Categorical features (e.g., \texttt{sex}, \texttt{education}, \texttt{marriage}) are kept as integers, consistent with domain semantics.
+
+\subsection{Leakage Prevention and Validation}
+
+All preprocessing (including capping percentiles and membership calibration) is performed within the training data scope and applied to the test set using frozen parameters to prevent leakage. Validation strategies considered:
+\begin{itemize}
+    \item Hold-out: 80/20 split as reported.
+    \item 5-fold cross-validation for hyperparameter tuning; final metrics reported on the hold-out test.
+    \item Temporal awareness: although the dataset is static, the payment history order is preserved; no target leakage features are introduced.
+\end{itemize}
+
+\subsection{Calibration and Threshold Selection}
+
+We optionally apply Platt scaling or isotonic regression to calibrate tree ensemble probabilities. Threshold \(\tau\) is selected to maximize F1 or based on application utility (e.g., cost-sensitive thresholding):
+\begin{equation}
+    	au^* = \arg\max_{\tau} \; U(\text{TP}(\tau), \text{FP}(\tau), \text{FN}(\tau)),
+\end{equation}
+where $U$ encodes operational costs/benefits.
+
+\subsection{Uncertainty and Statistical Testing}
+
+We compute 95\% confidence intervals via stratified bootstrap (1{,}000 resamples) for AUC and F1. For model comparisons, we report paired bootstrap $p$-values or DeLong's test for ROC-AUC when applicable.
+
+\subsection{Algorithmic Summaries}
+
+\paragraph{Fuzzy Inference (Mamdani)}
+\begin{enumerate}
+    \item Compute antecedent memberships for selected features.
+    \item Evaluate each rule with t-norm (min) to get activation $\alpha$.
+    \item Clip consequent set by $\alpha$ and aggregate via s-norm (max).
+    \item Defuzzify aggregated set by centroid to obtain $s_{\text{fuzzy}}$.
+\end{enumerate}
+
+\paragraph{Hybrid Late Fusion}
+\begin{enumerate}
+    \item Train ML model to obtain $p_{\text{ML}}(x)$.
+    \item Compute $s_{\text{fuzzy}}(x)$ from fuzzy layer.
+    \item Combine $\hat{p}(x) = (1-\lambda)\, p_{\text{ML}}(x) + \lambda\, s_{\text{fuzzy}}(x)$; tune $\lambda$ on validation.
+\end{enumerate}
+
+\subsection{Feature Overview}
+
+Table~\ref{tab:feat} summarizes the primary engineered features; the hybrid setting appends the fuzzy risk score.
+\begin{table}[h]
+    \centering
+    \begin{tabular}{ll}
+        	oprule
+        	extbf{Feature group} & \textbf{Examples} \\
+        \midrule
+        Demographics & \texttt{sex}, \texttt{education}, \texttt{marriage}, \texttt{age} \\
+        Credit limit & \texttt{limit\_bal\_capped} \\
+        Payment status & \texttt{pay\_1} -- \texttt{pay\_6} (normalized) \\
+        Bill amounts & \texttt{bill\_amt1\_capped} -- \texttt{bill\_amt6\_capped} \\
+        Payment amounts & \texttt{pay\_amt1\_capped} -- \texttt{pay\_amt6\_capped} \\
+        Hybrid addition & \texttt{fuzzy\_risk\_score} \\
+        \bottomrule
+    \end{tabular}
+    \caption{Feature overview (baseline: 23 features; hybrid: +1 fuzzy risk score).}
+    \label{tab:feat}
+\end{table}

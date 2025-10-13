@@ -1,0 +1,29 @@
+% Auto-generated Results Section
+
+\section{Results}
+
+We evaluate on UCI Taiwan Credit Card Default with train/test sizes 23971/5993. Best overall model: LightGBM + Fuzzy (Hybrid): AUC=0.770, F1=0.526, Recall=0.608, Acc=0.757. Best hybrid: LightGBM + Fuzzy (Hybrid): AUC=0.770, F1=0.526, Recall=0.608, Acc=0.757. Best baseline: XGBoost (Baseline): AUC=0.768, F1=0.522, Recall=0.600, Acc=0.757. Hybrid models generally improve recall at comparable AUC, aligning with the goal of catching more defaults.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l l c c c c c}
+\toprule
+Model & Type & Accuracy & Precision & Recall & F1-Score & ROC-AUC \\
+\midrule
+LightGBM + Fuzzy & Hybrid & 0.757 & 0.463 & 0.608 & 0.526 & 0.770 \\
+XGBoost + Fuzzy & Hybrid & 0.759 & 0.465 & 0.606 & 0.526 & 0.769 \\
+XGBoost & Baseline & 0.757 & 0.462 & 0.600 & 0.522 & 0.768 \\
+LightGBM & Baseline & 0.753 & 0.456 & 0.606 & 0.520 & 0.768 \\
+RF + Fuzzy & Hybrid & 0.783 & 0.508 & 0.556 & 0.531 & 0.767 \\
+Random Forest & Baseline & 0.778 & 0.499 & 0.548 & 0.522 & 0.765 \\
+Logistic Regression & Baseline & 0.775 & 0.492 & 0.549 & 0.519 & 0.752 \\
+LR + Fuzzy & Hybrid & 0.775 & 0.492 & 0.552 & 0.520 & 0.751 \\
+\bottomrule
+\end{tabular}
+\caption{Model comparison on the Taiwan Credit Card Default test set.}
+\label{tab:model_comp}
+\end{table}
+
+
+
+% You can include additional figures (ROC curves, PR curves) here if available.
