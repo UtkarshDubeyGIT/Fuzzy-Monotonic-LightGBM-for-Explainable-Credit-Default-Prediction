@@ -159,6 +159,8 @@ def load_and_preprocess_taiwan(
 	test_size: float = 0.2,
 	random_state: int = 42,
 	save: bool = True,
+	engineer_features: bool = True,
+	output_dir: str | Path | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
 	"""Load, clean, and split the Taiwan default dataset with leakage safety.
 
@@ -210,9 +212,10 @@ def load_and_preprocess_taiwan(
 		X, y, test_size=test_size, random_state=random_state, stratify=y
 	)
 
-	# Add engineered features BEFORE encoding + scaling
-	X_train = _add_engineered_features(X_train)
-	X_test = _add_engineered_features(X_test)
+	# Add engineered features BEFORE encoding + scaling (optional)
+	if engineer_features:
+		X_train = _add_engineered_features(X_train)
+		X_test = _add_engineered_features(X_test)
 
 	# Encode categorical object-dtype columns on train only
 	encoders, cat_cols = _fit_label_encoders(X_train)
@@ -228,8 +231,11 @@ def load_and_preprocess_taiwan(
 
 	# Persist processed splits if requested
 	if save:
-		repo_root = here.parent.parent.parent  # repo/ (since this file is src/data/preprocess.py)
-		out_dir = repo_root / 'data' / 'processed'
+		if output_dir is None:
+			repo_root = here.parent.parent.parent  # repo/
+			out_dir = repo_root / 'data' / 'processed'
+		else:
+			out_dir = Path(output_dir)
 		out_dir.mkdir(parents=True, exist_ok=True)
 
 		train_df = X_train.copy()
@@ -244,7 +250,34 @@ def load_and_preprocess_taiwan(
 	return X_train, X_test, y_train, y_test
 
 
-if __name__ == '__main__':
-	# Lightweight manual run support (no output other than file saves)
-	load_and_preprocess_taiwan()
+if __name__ == "__main__":
+	import argparse
+	import warnings
+	from pathlib import Path
+
+	# CLI: do work silently and only raise errors if any
+	parser = argparse.ArgumentParser(description="Preprocess Taiwan dataset")
+	parser.add_argument("--engineer-features", choices=["0", "1"], required=True,
+						help="1 to add engineered features, 0 to skip")
+	parser.add_argument("--output-dir", type=str, required=True,
+						help="Directory where train.csv and test.csv will be saved")
+	parser.add_argument("--variant", type=str, required=False, help="Variant name (unused)")
+	args = parser.parse_args()
+
+	engineer_features = bool(int(args.engineer_features))
+	output_dir = Path(args.output_dir).resolve()
+	output_dir.mkdir(parents=True, exist_ok=True)
+
+	# Silence non-error warnings to avoid any stdout/stderr noise
+	warnings.filterwarnings("ignore")
+
+	# Run preprocessing and always save into output_dir. No prints.
+	load_and_preprocess_taiwan(
+		data_path=None,
+		test_size=0.2,
+		random_state=42,
+		save=True,
+		engineer_features=engineer_features,
+		output_dir=output_dir,
+	)
 

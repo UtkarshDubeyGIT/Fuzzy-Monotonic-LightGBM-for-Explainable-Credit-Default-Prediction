@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import json  # ensure available for final JSON output
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -54,6 +54,13 @@ def _read_raw_df(raw_csv_path: Path) -> pd.DataFrame:
     # Create BILL_AMT_AVG on raw for fuzzy bases
     bill_cols = [f'BILL_AMT{i}' for i in range(1, 7)]
     df['BILL_AMT_AVG'] = df[bill_cols].mean(axis=1)
+    # Engineered bases for fuzzy (raw, unscaled)
+    df['utilization'] = (df['BILL_AMT_AVG'] / df['LIMIT_BAL'].replace(0, pd.NA)).fillna(0.0).clip(0, 1)
+    df['repay_ratio1'] = (df['PAY_AMT1'] / df['BILL_AMT1'].replace(0, pd.NA)).fillna(0.0).clip(0, 1)
+    pay_cols_ = [f'PAY_{i}' for i in range(0, 7) if f'PAY_{i}' in df.columns]
+    df['delinquency_intensity'] = df[pay_cols_].max(axis=1)
+    df['paytrend'] = ((df['PAY_AMT6'] - df['PAY_AMT1']) / (df['PAY_AMT1'] + 1e-6)).clip(-1, 1)
+
     return df
 
 
@@ -138,17 +145,23 @@ def _build_fuzzy_rules(train_m: pd.DataFrame, test_m: pd.DataFrame) -> Tuple[pd.
     def te(name: str) -> pd.Series: return test_m[name]
 
     rules = [
-        ('fuzz_rule1', ('LIMIT_BAL_low', 'PAY_0_high')),               # high risk
-        ('fuzz_rule2', ('PAY_AMT1_low', 'PAY_0_high')),                 # high risk
-        ('fuzz_rule3', ('BILL_AMT_AVG_high', 'PAY_0_high')),            # high risk
-        ('fuzz_rule4', ('AGE_low', 'PAY_0_high')),                      # high risk
-        ('fuzz_rule5', ('LIMIT_BAL_low', 'BILL_AMT_AVG_high')),         # high risk
-        ('fuzz_rule6', ('LIMIT_BAL_high', 'PAY_0_low')),                # low risk
-        ('fuzz_rule7', ('PAY_AMT1_high', 'PAY_0_low')),                 # low risk
-        ('fuzz_rule8', ('AGE_high', 'PAY_0_low')),                      # low risk
-        ('fuzz_rule9', ('LIMIT_BAL_high', 'BILL_AMT_AVG_low')),         # low risk
-        ('fuzz_rule10', ('BILL_AMT_AVG_low', 'PAY_0_low')),             # low risk
+    # High-risk patterns
+    ('fuzz_rule1',  ('utilization_high', 'repay_ratio1_low')),         # high util + low repay
+    ('fuzz_rule2',  ('delinquency_intensity_high',)),                   # strong lateness
+    ('fuzz_rule3',  ('PAY_0_high', 'LIMIT_BAL_low')),                   # recent late + low limit
+    ('fuzz_rule4',  ('paytrend_high', 'repay_ratio1_low')),             # paying down ↓ (neg trend) + low repay
+    ('fuzz_rule5',  ('AGE_low', 'PAY_0_high')),                         # young + late
+    ('fuzz_rule6',  ('utilization_high', 'PAY_0_high')),                # maxed out + late
+
+    # Low-risk patterns
+    ('fuzz_rule7',  ('utilization_low', 'repay_ratio1_high')),          # low util + high repay
+    ('fuzz_rule8',  ('PAY_0_low', 'repay_ratio1_high')),                # on time + high repay
+    ('fuzz_rule9',  ('AGE_high', 'PAY_0_low')),                         # older + on time
+    ('fuzz_rule10', ('LIMIT_BAL_high', 'PAY_0_low')),                   # high limit + on time
+    ('fuzz_rule11', ('paytrend_low', 'repay_ratio1_high')),             # (pos trend) better pay + high repay
+    ('fuzz_rule12', ('utilization_low',)),                              # very low utilization alone
     ]
+
 
     tr_df = pd.DataFrame(index=train_m.index)
     te_df = pd.DataFrame(index=test_m.index)
@@ -169,7 +182,7 @@ def _metrics(y_true: np.ndarray, prob: np.ndarray) -> Dict[str, float]:
     return {'roc_auc': float(roc_auc), 'pr_auc': float(pr_auc), 'brier': float(brier), 'ks': ks}
 
 
-def train_fuzzy_monotonic_model() -> Tuple[object, Dict[str, float]]:
+def train_fuzzy_monotonic_model(*, skip_monotonic: bool = False) -> Tuple[object, Dict[str, float]]:
     """Train fuzzy-featured, monotonic-constrained LightGBM on Taiwan dataset.
 
     Steps:
@@ -199,15 +212,24 @@ def train_fuzzy_monotonic_model() -> Tuple[object, Dict[str, float]]:
 
     # Ensure BILL_AMT_AVG exists in processed features as a raw (unscaled) column
     # We compute from raw and append to processed matrices (tree model tolerates scale mix)
-    bill_avg_train = X_train_raw['BILL_AMT_AVG'].reset_index(drop=True)
-    bill_avg_test = X_test_raw['BILL_AMT_AVG'].reset_index(drop=True)
-    X_train_proc = X_train_proc.reset_index(drop=True)
-    X_test_proc = X_test_proc.reset_index(drop=True)
-    X_train_proc['BILL_AMT_AVG'] = bill_avg_train.values
-    X_test_proc['BILL_AMT_AVG'] = bill_avg_test.values
+    # bill_avg_train = X_train_raw['BILL_AMT_AVG'].reset_index(drop=True)
+    # bill_avg_test = X_test_raw['BILL_AMT_AVG'].reset_index(drop=True)
+    # X_train_proc = X_train_proc.reset_index(drop=True)
+    # X_test_proc = X_test_proc.reset_index(drop=True)
+    # X_train_proc['BILL_AMT_AVG'] = bill_avg_train.values
+    # X_test_proc['BILL_AMT_AVG'] = bill_avg_test.values
 
     # Build fuzzy memberships from train-only cutpoints on selected bases
-    bases = ['LIMIT_BAL', 'BILL_AMT_AVG', 'AGE', 'PAY_0', 'PAY_AMT1']
+    bases = [
+    'utilization',          # ↑ → more risk
+    'repay_ratio1',         # ↑ → less risk
+    'delinquency_intensity',# ↑ → more risk
+    'PAY_0',                # ↑ (later) → more risk
+    'LIMIT_BAL',            # ↑ → less risk
+    'AGE',                  # ↑ → less risk (mild)
+    'paytrend'              # ↑ → less risk (this MUST be included)
+    ]
+
     train_m, test_m, _ = _build_fuzzy_features(X_train_raw[bases], X_test_raw[bases], bases)
 
     # Rules
@@ -219,20 +241,26 @@ def train_fuzzy_monotonic_model() -> Tuple[object, Dict[str, float]]:
 
     # Prepare monotonic constraints vector aligned with column order
     monotone_map = {
-        'LIMIT_BAL': -1,
-        'BILL_AMT_AVG': +1,
-        'AGE': -1,
-        'PAY_0': +1,
-        'PAY_AMT1': -1,
+    'LIMIT_BAL': -1,
+    'AGE': -1,
+    'PAY_0': +1,
+    # engineered (already in processed X)
+    'utilization': +1,
+    'repay_ratio1': -1,
+    'delinquency_intensity': +1,
+    'paytrend': -1,  # improving payments (higher) → less risk
+    # keep 0 for all fuzzy_* columns
     }
+
     constraints: List[int] = []
-    for col in X_train.columns:
-        if col in monotone_map:
-            constraints.append(monotone_map[col])
-        elif col.startswith('fuzz_rule') or col.endswith('_low') or col.endswith('_med') or col.endswith('_high'):
-            constraints.append(0)
-        else:
-            constraints.append(0)
+    if not skip_monotonic:
+        for col in X_train.columns:
+            if col in monotone_map:
+                constraints.append(monotone_map[col])
+            elif col.startswith('fuzz_rule') or col.endswith('_low') or col.endswith('_med') or col.endswith('_high'):
+                constraints.append(0)
+            else:
+                constraints.append(0)
 
     # Train LightGBM with monotonic constraints
     try:
@@ -248,7 +276,7 @@ def train_fuzzy_monotonic_model() -> Tuple[object, Dict[str, float]]:
         colsample_bytree=0.9,
         random_state=42,
         n_jobs=-1,
-        monotone_constraints=constraints,
+        monotone_constraints=(None if skip_monotonic else constraints),
     )
     model.fit(X_train, y_train)
     y_prob = model.predict_proba(X_test)[:, 1]
@@ -282,6 +310,28 @@ def train_fuzzy_monotonic_model() -> Tuple[object, Dict[str, float]]:
     return model, metrics
 
 
-if __name__ == '__main__':
-    model, metrics = train_fuzzy_monotonic_model()
-    print('Fuzzy-monotonic metrics:', json.dumps(metrics, indent=2))
+if __name__ == "__main__":
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description="Train fuzzy (monotonic) model")
+    parser.add_argument("--metrics-out", type=str, required=False, default=None,
+                        help="Optional path to write metrics JSON")
+    parser.add_argument("--variant", type=str, required=False, default=None)
+    parser.add_argument("--skip-monotonic", action="store_true", default=False)
+    args = parser.parse_args()
+
+    metrics_out_path = Path(args.metrics_out).resolve() if args.metrics_out else None
+    if metrics_out_path is not None:
+        metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Train and get metrics
+    _, metrics = train_fuzzy_monotonic_model(skip_monotonic=bool(args.skip_monotonic))
+
+    # Save metrics if requested
+    if metrics_out_path is not None:
+        with open(metrics_out_path, 'w', encoding='utf-8') as f:
+            json.dump(metrics, f, indent=2)
+
+    # Print exactly one JSON
+    print(json.dumps(metrics, indent=2))

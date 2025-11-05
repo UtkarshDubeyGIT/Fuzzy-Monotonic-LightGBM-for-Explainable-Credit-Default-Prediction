@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import json  # ensure available for final JSON output
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -196,7 +196,84 @@ def train_baseline_models() -> Tuple[object, Dict[str, float]]:
     return best_model, best_metrics
 
 
-if __name__ == '__main__':
-    model, metrics = train_baseline_models()
-    print('Best baseline model:', metrics.get('model'))
+def _compute_baseline_from_dir(data_dir: Path) -> Dict[str, float]:
+    """Load splits from data_dir, train baseline models, and return metrics for the best model.
+
+    - Tries LogisticRegression and LightGBM (if available)
+    - Selects best by PR-AUC (tie-breaker ROC-AUC)
+    - Returns metrics dict {roc_auc, pr_auc, brier, ks}
+    """
+    train_df, test_df = _load_splits(data_dir)
+    X_train, y_train = _split_X_y(train_df)
+    X_test, y_test = _split_X_y(test_df)
+
+    # Ensure expected engineered columns exist when applicable; skip hard error to support raw variant
+    # We'll only compute metrics on whatever columns are present.
+
+    # Model 1: Logistic Regression
+    log_reg = LogisticRegression(
+        class_weight='balanced', solver='liblinear', max_iter=1000, random_state=42
+    )
+    log_reg.fit(X_train, y_train)
+    log_proba = log_reg.predict_proba(X_test)[:, 1]
+    log_metrics = _compute_metrics(y_test.values, log_proba)
+
+    # Model 2: LightGBM (optional)
+    lgbm_metrics = None
+    try:
+        from lightgbm import LGBMClassifier  # type: ignore
+
+        lgbm = LGBMClassifier(
+            class_weight='balanced',
+            n_estimators=300,
+            learning_rate=0.05,
+            subsample=0.9,
+            colsample_bytree=0.9,
+            random_state=42,
+            n_jobs=-1,
+        )
+        lgbm.fit(X_train, y_train)
+        lgbm_proba = lgbm.predict_proba(X_test)[:, 1]
+        lgbm_metrics = _compute_metrics(y_test.values, lgbm_proba)
+    except Exception:
+        lgbm_metrics = None
+
+    # Choose best
+    best = log_metrics
+    if lgbm_metrics is not None:
+        metric_key = 'pr_auc'
+        if lgbm_metrics[metric_key] > log_metrics[metric_key] or (
+            np.isclose(lgbm_metrics[metric_key], log_metrics[metric_key])
+            and lgbm_metrics['roc_auc'] >= log_metrics['roc_auc']
+        ):
+            best = lgbm_metrics
+
+    return best
+
+
+if __name__ == "__main__":
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description="Train baseline model and output metrics JSON")
+    parser.add_argument("--data-dir", type=str, required=True, help="Directory containing train.csv and test.csv")
+    parser.add_argument("--metrics-out", type=str, required=False, default=None,
+                        help="Optional path to write metrics JSON")
+    parser.add_argument("--variant", type=str, required=False, default=None, help="Variant name (unused)")
+    args = parser.parse_args()
+
+    data_dir = Path(args.data_dir).resolve()
+    metrics_out_path = Path(args.metrics_out).resolve() if args.metrics_out else None
+    if metrics_out_path is not None:
+        metrics_out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    metrics = _compute_baseline_from_dir(data_dir)
+
+    # Write to file if requested
+    if metrics_out_path is not None:
+        with open(metrics_out_path, 'w', encoding='utf-8') as f:
+            json.dump(metrics, f, indent=2)
+
+    # Print exactly one JSON
     print(json.dumps(metrics, indent=2))
+
