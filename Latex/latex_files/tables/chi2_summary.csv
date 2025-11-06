@@ -1,0 +1,11 @@
+feature,p_value,dof,note
+Housing,0.00011167465374597686,2.0,ok
+Checking account,0.00019935687308106684,2.0,ok
+Saving accounts,0.00035029499291971256,3.0,ok
+Sex,0.020739913068713305,1.0,ok
+Purpose,0.05792591119293633,7.0,ok
+Job,0.5965815918843433,3.0,ok
+Unnamed: 0,,,skipped (high-cardinality)
+Age,,,skipped (high-cardinality)
+Credit amount,,,skipped (high-cardinality)
+Duration,,,skipped (high-cardinality)
