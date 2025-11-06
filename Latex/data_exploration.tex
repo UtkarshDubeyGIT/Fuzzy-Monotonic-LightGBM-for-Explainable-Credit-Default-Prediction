@@ -1,0 +1,346 @@
+% Data exploration summary for German and Taiwan datasets
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{subcaption} % added for subfigure grid
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=blue}
+
+\title{Data Exploration — German Credit and Taiwan Default Datasets}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Overview}
+This report summarises the key exploratory data analysis (EDA) steps performed on the German Credit and Taiwan Credit Card Default datasets. The objective of this EDA is to examine data quality, detect patterns and relationships, and extract early insights that influence model development, preprocessing, and feature engineering.
+
+\section{German Credit Dataset}
+The German Credit dataset represents a loan application scenario. The EDA focuses on understanding risk distribution, missingness patterns, feature behaviour, and their relation to loan default probability.
+
+\subsection{Target Distribution}
+Understanding the target class distribution provides initial insight into class imbalance, which influences model evaluation metrics and resampling strategy.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{latex_files/01_risk_distribution.png}
+  \caption{Risk distribution (German dataset)}
+\end{figure}
+
+The dataset shows a moderate imbalance, with ``Good'' borrowers being the majority. This suggests the need for balanced evaluation metrics such as F1-score and AUC, rather than accuracy alone.
+
+\subsection{Missingness}
+Missing data analysis helps assess data quality and the need for imputation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{latex_files/00_missing_values_heatmap.png}
+  \caption{Missing values percentage (German dataset)}
+\end{figure}
+
+Most variables exhibit low missingness, except ``Checking account'' and ``Saving accounts''. These fields may require targeted imputation strategies or the use of missing indicators to preserve signal.
+
+\subsection{Numeric Summaries and Distributions}
+Understanding the distribution of numerical features aids in selecting appropriate scaling or transformations.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.32\textwidth]{latex_files/hist_Age.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/hist_Credit amount.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/hist_Duration.png}
+  \caption{Histograms (Age, Credit amount, Duration)}
+\end{figure}
+
+The variables show right-skewed distributions, especially for \textit{Credit amount} and \textit{Duration}, suggesting that log transformation may help models sensitive to scale, such as logistic regression.
+
+\subsection{Numeric Relationship with Target}
+Boxplots illustrate whether numerical features differentiate between defaulting vs. non-defaulting customers.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.32\textwidth]{latex_files/num_box_Age_by_risk.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/num_box_Credit amount_by_risk.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/num_box_Duration_by_risk.png}
+  \caption{Boxplots of numeric features by Risk (German)}
+\end{figure}
+
+Higher credit amounts and longer loan durations show a tendency to correlate with increased default risk. This indicates their predictive value for modelling.
+
+\subsection{Correlation and Risk Comparison Plots}
+Correlation analysis helps detect multicollinearity and redundant features.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.7\textwidth]{latex_files/02_correlation_heatmap.png}
+  \caption{Correlation heatmap (numeric features — German)}
+\end{figure}
+
+The heatmap shows weak-to-moderate correlations among numeric variables, suggesting low multicollinearity, which is beneficial for linear models.
+
+% ------------------------ FULL PAGE: Risk Comparison Plots ------------------------
+\begin{figure}[p] % "p" forces figure to its own page
+  \centering
+  \captionsetup{font=small}
+  \captionsetup[subfigure]{font=footnotesize, justification=centering}
+
+  % -------- Counts: Row 1 --------
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Checking account.png}
+    \caption{Counts: Checking account}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Housing.png}
+    \caption{Counts: Housing}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Job.png}
+    \caption{Counts: Job}
+  \end{subfigure}
+
+  \vspace{1.2em} % Increased vertical space
+
+  % -------- Counts: Row 2 --------
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Purpose.png}
+    \caption{Counts: Purpose}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Saving accounts.png}
+    \caption{Counts: Saving accounts}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_counts_Sex.png}
+    \caption{Counts: Sex}
+  \end{subfigure}
+
+  \vspace{1.2em} % Increased vertical space
+
+  % -------- Default rates: Row 3 --------
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Checking account.png}
+    \caption{Default rate: Checking account}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Housing.png}
+    \caption{Default rate: Housing}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Job.png}
+    \caption{Default rate: Job}
+  \end{subfigure}
+
+  \vspace{1.2em} % Increased vertical space
+
+  % -------- Default rates: Row 4 --------
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Purpose.png}
+    \caption{Default rate: Purpose}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Saving accounts.png}
+    \caption{Default rate: Saving account}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.30\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{latex_files/cat_default_rate_Sex.png}
+    \caption{Default rate: Sex}
+  \end{subfigure}
+
+  \caption{Risk comparison across categorical features (German dataset).}
+\end{figure}
+
+\clearpage % Forces the next subsection to start on a new page
+% -------------------------------------------------------------------------------
+
+\subsection{Sample Violin Plots}
+Violin plots reveal distribution spreads and density differences between risk groups.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.32\textwidth]{latex_files/violin_Age_by_risk.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/violin_Credit amount_by_risk.png}
+  \includegraphics[width=0.32\textwidth]{latex_files/violin_Duration_by_risk.png}
+  \caption{Violin plots (Age, Credit amount, Duration) by Risk}
+\end{figure}
+
+These plots further confirm that higher loan amounts and longer maturity periods align with higher default likelihood.
+
+\subsection{Chi-square Summary (Categorical Association)}
+This test identifies categorical variables significantly associated with default risk.
+
+\begin{table}[H]
+\centering
+\caption{Chi-Square Test Summary for Categorical Features (German Dataset)}
+\label{tab:chi2_summary}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Feature} & \textbf{Chi-Square} & \textbf{df} & \textbf{p-value} \\
+\midrule
+Checking Account & 112.30 & 3 & <0.001 \\
+Housing          & 25.80  & 2 & <0.001 \\
+Purpose          & 8.60   & 5 & 0.123 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Features such as ``Checking account'' and ``Housing'' show strong significance, indicating that financial stability factors are critical in predicting creditworthiness.
+
+\newpage
+\section{Taiwan Default Dataset}
+The Taiwan data set contains credit card behavior data for six months. EDA is crucial for detecting temporal patterns that influence monthly default.
+
+\subsection{Categorical Distributions (Sample)}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X1.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X2.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X3.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X4.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X5.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X6.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X7.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X8.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X9.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X10.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X11.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X12.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X13.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X14.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X15.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X16.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X17.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X18.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X19.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X20.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X21.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X22.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_X23.png}
+  \includegraphics[width=0.23\textwidth]{latex_files/bar_Y.png}
+  
+  \caption{Sample categorical distributions (Taiwan)}
+\end{figure}
+
+Most of the customers fall into similar educational and age groups, indicating limited demographic diversity.
+
+\subsection{Correlation (All Columns)}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.9\textwidth]{latex_files/corr_heatmap_all_columns.png}
+  \caption{Spearman correlation heatmap (all columns — Taiwan)}
+\end{figure}
+
+The billing and repayment variables show strong clusters of internal correlations, suggesting the need for reduction or regularization of dimensionality.
+
+\subsection{Class Balance and IV Summary}
+\begin{table}[H]
+\centering
+\caption{Class Balance Summary (Taiwan Dataset)}
+\label{tab:class_balance}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Class} & \textbf{Count} & \textbf{Percentage} \\
+\midrule
+Non-Default (0) & 23364 & 77.88\% \\
+Default (1)     & 6636  & 22.12\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The default rate of ~22\% indicates a high imbalance. Cost-sensitive modeling approaches are recommended.
+
+\begin{table}[H]
+\centering
+\caption{Information Value (IV) Summary}
+\label{tab:iv_summary}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Feature} & \textbf{IV} & \textbf{Strength} \\
+\midrule
+PAY\_0        & 0.54 & Strong \\
+PAY\_2        & 0.42 & Strong \\
+Education     & 0.15 & Medium \\
+Checking Acc. & 0.35 & Strong \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The repayment history variables (PAY_0 and PAY_2) show very strong predictive power, highlighting behavior-based credit patterns.
+
+\subsection{High-Cardinality Categorical Feature Chi-Square Analysis (Taiwan Dataset)}
+
+To further assess the relationship between categorical variables and default behaviour, a Chi-Square test was conducted on high-cardinality categorical features. This analysis helps determine whether a feature provides meaningful separation between default and non-default classes.
+
+A high number of category levels (cardinality) often increases model complexity and may introduce noise or overfitting. The Chi-Square test helps identify which of these variables carry statistically significant association with the target.
+
+\begin{longtable}{lccc}
+\caption{Chi-Square Test Results for High-Cardinality Categorical Features (Taiwan Dataset)}
+\label{tab:chi2_taiwan}\\
+\toprule
+\textbf{Feature} & \textbf{Levels} & \textbf{Chi-Square} & \textbf{df} \\
+\midrule
+\endfirsthead
+
+\toprule
+\textbf{Feature} & \textbf{Levels} & \textbf{Chi-Square} & \textbf{df} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{4}{r}{\textit{Continued on next page}} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+X12	& 22723	& 22538.26282	& 22722 \\
+X13	& 22346	& 22220.16053	& 22345 \\
+X14	& 22026	& 21948.1175	& 22025 \\
+X15	& 21548	& 21490.05406	& 21547 \\
+X16	& 21010	& 20941.89468	& 21009 \\
+X17	& 20604	& 20539.77654	& 20603 \\
+X18	& 7943	& 7109.218638	& 7942 \\
+X19	& 7899	& 6700.578972	& 7898 \\
+X20	& 7518	& 6636.210262	& 7517 \\
+X23	& 6939	& 6188.916847	& 6938 \\
+X21	& 6937	& 6077.420899	& 6936 \\
+X22	& 6897	& 6074.352701	& 6896 \\
+X6	& 11	& 5365.964977	& 10 \\
+X7	& 11	& 3474.46679	& 10 \\
+X8	& 11	& 2622.462128	& 10 \\
+X9	& 11	& 2341.469945	& 10 \\
+X10	& 10	& 2197.694901	& 9 \\
+X11	& 10	& 1886.835309	& 9 \\
+X1	& 81	& 1010.018493	& 80 \\
+X3	& 7	& 163.2165579	& 6 \\
+X5	& 56	& 158.5529001	& 55 \\
+X2	& 2	& 47.90543312	& 1 \\
+X4	& 4	& 35.66239583	& 3 \\
+
+
+\end{longtable}
+
+\noindent
+\textbf{Interpretation.}  
+Features such as X12 to X21 exhibit extremely high cardinality (over 19,000 unique levels each). Although their Chi-Square values are high due to large degrees of freedom, they are unlikely to be useful for predictive modelling without transformation. Dimensionality reduction strategies such as category grouping, frequency/WOE encoding, or clustering-based encoding are recommended before model training.
+
+
+
+\end{document}

@@ -1,0 +1,45 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Preamble (Overleaf-safe) ----------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=blue}
+
+\title{Data Overview\\German Credit (UCI) and Taiwan Credit Card Default Datasets}
+
+\begin{document}
+\maketitle
+
+\section*{Overview}
+To verify our findings, we used two well-known datasets that are popular for credit risk research. The first is the \textit{German Credit dataset }, which is great for understanding the risks of granting new loans because it is small and easy to interpret. The second, the \textit{Taiwan Credit Card dataset}, gives us a look at the real-world behavior of existing credit card customers and why they might stop making payments. Using both, we can test how well our analysis and models work on two very different types of credit problem.
+
+\subsection*{German Credit (UCI)}
+The German Credit dataset contains 1{,}000 loan applicants described by approximately 20 tabular attributes, including socio-demographic variables (\texttt{Age}, \texttt{Sex}), financial indicators (\texttt{Credit amount}, \texttt{Duration}), account status (\texttt{Checking account}, \texttt{Saving accounts}), and loan characteristics (\texttt{Purpose}, \texttt{Housing}). The binary target labels creditworthiness as \textit{good} or \textit{bad}. Class distribution is moderately imbalanced at roughly 70:30 (good:bad). This dataset is commonly used as a baseline for credit scoring due to its interpretability and manageable size.
+
+\subsection*{Taiwan Credit Card Default}
+The Taiwan dataset comprises 30{,}000 credit card clients with 23 variables covering demographic profiles (\texttt{Education}, \texttt{Marriage}, \texttt{Age}) and monthly behavioural signals across multiple periods (repayment status \texttt{PAY\_0--PAY\_6}, bill amounts \texttt{BILL\_AMT\_1--6}, and payment amounts \texttt{PAY\_AMT\_1--6}). The target indicates whether the client defaulted in the subsequent month (\textit{default} vs \textit{non-default}). The default rate is approximately 22\%, introducing notable class imbalance and motivating cost-sensitive evaluation.
+
+\begin{table}[h]
+\centering
+\caption{Comparative summary of datasets used in analysis.}
+\label{tab:overview-summary}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Features} & \textbf{Target} & \textbf{Imbalance}\\
+\midrule
+German Credit (UCI) & 1{,}000 & $\approx$20 & Good / Bad & $\sim$70:30 (good:bad) \\
+Taiwan Credit Default & 30{,}000 & 23 & Default / Non-default & $\sim$22\% default \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Rationale.}
+The German dataset offers a compact, interpretable benchmark reflective of loan application screening. The Taiwan dataset offers a behaviour-rich context reflective of portfolio management. Analysing both allows assessment of EDA and modelling choices across small tabular and large behavioural settings, enhancing the generalisability and robustness of the methodology.
+
+\end{document}
