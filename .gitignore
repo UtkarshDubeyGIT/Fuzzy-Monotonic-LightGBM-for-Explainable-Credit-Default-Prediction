@@ -83,3 +83,6 @@ EDA/complex_dataset.zip
 /src/features/__pycache__/
 /src/models/__pycache__/
 /src/visualization/__pycache__/
+
+
+.gitignore
