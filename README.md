@@ -1,8 +1,8 @@
 # Fuzzy-Monotonic LightGBM for Explainable Credit Default Prediction
 
+[![Research Paper](https://drive.google.com/file/d/1wVfmxoemUydJ5hr7wm3aLlFd95IgJVxS/view?usp=sharing)](G-Drive/Research Paper.pdf)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Paper](https://img.shields.io/badge/paper-Extended_IEEE-blue)](Latex/extended_ieee.tex)
 
 > **A hybrid explainable AI framework combining fuzzy linguistic reasoning with monotonic gradient boosting for regulatory-compliant credit default prediction.**
 
